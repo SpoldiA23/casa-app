@@ -5,8 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1f6f5c">
 <meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Casa">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <title>Casa</title>
 <style>
 :root{
@@ -26,13 +29,17 @@ main{flex:1;padding:4px 16px 96px}
 h2{font-size:13px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin:20px 0 8px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 14px;margin-bottom:8px}
 .item{display:flex;align-items:center;gap:10px;justify-content:space-between}
-.item .t{font-weight:600}
+.item .grow{flex:1;min-width:0;cursor:pointer}
+.item .t{font-weight:600;overflow-wrap:anywhere}
 .item .s{color:var(--muted);font-size:14px}
 .late{color:var(--danger)} .soon{color:var(--warn)} .ok{color:var(--ok)}
 .empty{color:var(--muted);padding:6px 2px;font-size:14px}
+.hint{color:var(--muted);font-size:13px;margin:2px 2px 0}
 button{font:inherit;border:0;border-radius:10px;padding:9px 14px;cursor:pointer}
 .primary{background:var(--brand);color:var(--brand-ink);font-weight:600}
+.outline{background:transparent;color:var(--brand);border:1.5px solid var(--brand);font-weight:600}
 .ghost{background:transparent;color:var(--muted);border:1px solid var(--line)}
+.danger{background:transparent;color:var(--danger);border:1px solid var(--danger)}
 .small{padding:6px 10px;font-size:14px}
 .link{background:none;color:var(--muted);padding:4px 6px}
 .fab{position:fixed;right:18px;bottom:calc(env(safe-area-inset-bottom) + 76px);width:54px;height:54px;border-radius:50%;font-size:28px;line-height:1;padding:0;box-shadow:0 4px 14px rgba(0,0,0,.25)}
@@ -41,11 +48,12 @@ nav button{flex:1;background:none;color:var(--muted);padding:10px 2px 8px;font-s
 nav button span{display:block;font-size:20px}
 nav button.on{color:var(--brand);font-weight:600}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.45);display:flex;align-items:flex-end;justify-content:center;z-index:10}
-.sheet{background:var(--card);width:100%;max-width:560px;border-radius:18px 18px 0 0;padding:18px 16px calc(env(safe-area-inset-bottom) + 18px)}
+.sheet{background:var(--card);width:100%;max-width:560px;max-height:92vh;overflow:auto;border-radius:18px 18px 0 0;padding:18px 16px calc(env(safe-area-inset-bottom) + 18px)}
 .sheet h3{margin:0 0 10px}
 label{display:block;font-size:13px;color:var(--muted);margin-bottom:10px}
 input,select{display:block;width:100%;margin-top:4px;padding:10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit}
-.row{display:flex;gap:8px;justify-content:flex-end;margin-top:6px}
+.row{display:flex;gap:8px;justify-content:flex-end;margin-top:6px;flex-wrap:wrap}
+.row .spacer{flex:1}
 .center{padding:48px 20px}
 .center h1{margin:0 0 6px}
 .center p{color:var(--muted)}
@@ -58,6 +66,24 @@ input,select{display:block;width:100%;margin-top:4px;padding:10px;border-radius:
 .slot b{width:56px;font-size:12px;text-transform:uppercase;color:var(--muted);font-weight:600}
 .slot span.ph{color:var(--muted)}
 .err{color:var(--danger);font-size:14px;min-height:20px}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-top:1px solid var(--line);font-size:15px}
+.kv:first-of-type{border-top:0}
+.kv span:first-child{color:var(--muted)}
+.kv span:last-child{text-align:right;overflow-wrap:anywhere}
+.brief{background:var(--brand);color:var(--brand-ink);border:0;margin-top:6px}
+.brief .hi{font-size:20px;font-weight:700;margin:0}
+.brief .dt{opacity:.85;font-size:14px;margin-bottom:8px}
+.brief .dt::first-letter{text-transform:uppercase}
+.brief .sum{font-size:15px;line-height:1.45}
+.chip{display:inline-block;padding:0 8px;border-radius:99px;font-size:12px;border:1px solid var(--line);color:var(--muted);margin-left:6px}
+.chip.me{border-color:var(--brand);color:var(--brand)}
+.seg{display:flex;gap:6px;margin:8px 0 4px}
+.seg button{flex:1;background:transparent;color:var(--muted);border:1px solid var(--line);padding:8px 4px;font-size:14px}
+.seg button.on{background:var(--brand);color:var(--brand-ink);border-color:var(--brand);font-weight:600}
+a.btn{display:inline-block;text-decoration:none;border-radius:10px;padding:6px 10px;font-size:14px;white-space:nowrap}
+a.btn.primary{background:var(--brand);color:var(--brand-ink)}
+.when{font-variant-numeric:tabular-nums;font-weight:700;margin-right:8px}
+.sub{font-size:13px;color:var(--muted);margin:10px 2px 4px}
 </style>
 </head>
 <body>
@@ -66,7 +92,7 @@ input,select{display:block;width:100%;margin-top:4px;padding:10px;border-radius:
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 // ============ CONFIGURAZIONE ============
-// Supabase → Project Settings → API
+// Supabase → Project Settings → API (URL del progetto + chiave pubblica "publishable"/"anon")
 const SUPABASE_URL = 'https://dbdxilaxtspzxuyrxbra.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_Bevfj67zK_NfGfJBb5GyNg_sjsMwn6k';
 // ========================================
@@ -77,14 +103,15 @@ const app = document.getElementById('app');
 const CATS = ['bollette','condominio','mutuo/affitto','assicurazioni','tasse','spesa','manutenzione','altro'];
 const RECS = [['none','Una tantum'],['monthly','Ogni mese'],['bimonthly','Ogni 2 mesi'],['quarterly','Ogni 3 mesi'],['semiannual','Ogni 6 mesi'],['yearly','Ogni anno']];
 const REC_N = {none:0, monthly:1, bimonthly:2, quarterly:3, semiannual:6, yearly:12};
-const TABS = [['oggi','🏠','Oggi'],['spese','💶','Spese'],['faccende','🧹','Faccende'],['menu','🍝','Menu'],['impegni','📅','Impegni']];
+const TABS = [['oggi','🏠','Oggi'],['spese','💶','Spese'],['faccende','🧹','Faccende'],['menu','🍝','Menu'],['impegni','📅','Impegni'],['casa','🔧','Casa']];
 
-const state = { screen:'loading', user:null, member:null, house:null, tab:'oggi', d:{}, weekStart:monday(new Date()), err:'' };
+const state = { screen:'loading', user:null, member:null, house:null, tab:'oggi', casaView:'componenti', d:{}, weekStart:monday(new Date()), err:'' };
 
 // ---------- utilità ----------
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 function monday(d){ d=new Date(d); d.setDate(d.getDate()-((d.getDay()+6)%7)); d.setHours(0,0,0,0); return d; }
 function iso(d){ const z=new Date(d.getTime()-d.getTimezoneOffset()*60000); return z.toISOString().slice(0,10); }
+function toLocalInput(s){ const d=new Date(s); return new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,16); }
 function addDays(d,n){ const x=new Date(d); x.setDate(x.getDate()+n); return x; }
 function addMonths(s,n){
   const [y,m,d]=s.split('-').map(Number);
@@ -108,17 +135,23 @@ function dueLabel(s){
 // ---------- dati ----------
 async function loadData(){
   const ws=iso(state.weekStart), we=iso(addDays(state.weekStart,6));
-  const [m,e,c,ev,me,td] = await Promise.all([
+  const [m,e,c,ev,me,td,co,ma,ct] = await Promise.all([
     sb.from('members').select('*'),
     sb.from('expenses').select('*').order('due_date'),
     sb.from('chores').select('*').order('next_due'),
     sb.from('events').select('*').gte('starts_at', new Date(Date.now()-864e5).toISOString()).order('starts_at'),
     sb.from('meals').select('*').gte('day',ws).lte('day',we),
-    sb.from('meals').select('*').eq('day',today())
+    sb.from('meals').select('*').gte('day',today()).lte('day',iso(addDays(new Date(),1))),
+    sb.from('components').select('*').order('name'),
+    sb.from('maintenances').select('*').order('next_due'),
+    sb.from('contacts').select('*').order('name')
   ]);
   const bad=[m,e,c,ev,me,td].find(r=>r.error);
   if(bad) throw bad.error;
-  state.d = { members:m.data, expenses:e.data, chores:c.data, events:ev.data, meals:me.data, todayMeals:td.data };
+  // Il modulo Casa funziona solo dopo aver eseguito schema_casa.sql: se manca, il resto dell'app continua a funzionare.
+  const casaMissing=[co,ma,ct].some(r=>r.error);
+  state.d = { members:m.data, expenses:e.data, chores:c.data, events:ev.data, meals:me.data, dayMeals:td.data,
+    components:casaMissing?[]:co.data, maintenances:casaMissing?[]:ma.data, contacts:casaMissing?[]:ct.data, casaMissing };
 }
 
 async function boot(){
@@ -153,7 +186,7 @@ function viewAuth(){ return `
   <div class="err">${esc(state.err)}</div>
   <div class="row" style="justify-content:stretch">
     <button class="primary" style="flex:1" data-act="login">Accedi</button>
-     <button class="ghost" style="flex:1" data-act="signup">Registrati</button>
+    <button class="outline" style="flex:1" data-act="signup">Registrati</button>
   </div>
 </form></div>`; }
 
@@ -175,39 +208,75 @@ function viewOnboard(){ return `
 <button class="link" data-act="logout">Esci</button></div>`; }
 
 function viewMain(){
-  const body = { oggi:tabOggi, spese:tabSpese, faccende:tabFaccende, menu:tabMenu, impegni:tabImpegni }[state.tab]();
-  const showFab = ['spese','faccende','impegni'].includes(state.tab);
+  const body = { oggi:tabOggi, spese:tabSpese, faccende:tabFaccende, menu:tabMenu, impegni:tabImpegni, casa:tabCasa }[state.tab]();
+  const showFab = ['spese','faccende','impegni'].includes(state.tab) || (state.tab==='casa' && !state.d.casaMissing);
   return `
 <header><div><h1>${esc(state.house?.name||'Casa')}</h1><small>Ciao ${esc(state.member.display_name)}</small></div>
-<button class="link" data-act="settings">⚙️</button></header>
+<button class="link" data-act="settings" aria-label="Impostazioni">⚙️</button></header>
 <main>${body}</main>
-${showFab?`<button class="primary fab" data-act="add-${state.tab}">+</button>`:''}
+${showFab?`<button class="primary fab" data-act="add-${state.tab}" aria-label="Aggiungi">+</button>`:''}
 <nav>${TABS.map(([k,i,l])=>`<button class="${state.tab===k?'on':''}" data-tab="${k}"><span>${i}</span>${l}</button>`).join('')}</nav>`;
 }
 
-// ----- Oggi -----
+// ----- Oggi: resoconto della giornata -----
+const pl = (n,s,p) => `${n} ${n===1?s:p}`;
+const hm = s => new Date(s).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+function rowEventShort(e){
+  return `<div class="card item"><div class="grow" data-act="edit-event" data-id="${e.id}"><div class="t"><span class="when">${hm(e.starts_at)}</span>${esc(e.title)}</div>
+  <div class="s">${esc(nameOf(e.assignee))}${e.notes?' · '+esc(e.notes):''}</div></div></div>`;
+}
 function tabOggi(){
-  const d=state.d, t=today(), in7=iso(addDays(new Date(),7));
+  const d=state.d, t=today(), tomorrow=iso(addDays(new Date(),1)), in7=iso(addDays(new Date(),7));
+  const me=state.member.user_id, hour=new Date().getHours();
+  const greet=hour<13?'Buongiorno':hour<18?'Buon pomeriggio':'Buonasera';
+  const dateStr=new Date().toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long'});
+  const dayOf=s=>iso(new Date(s));
+  const evToday=d.events.filter(e=>dayOf(e.starts_at)===t);
+  const evTom=d.events.filter(e=>dayOf(e.starts_at)===tomorrow);
+  const chores=d.chores.filter(c=>c.next_due<=t).sort((a,b)=>(b.assignee===me)-(a.assignee===me));
+  const mine=chores.filter(c=>c.assignee===me).length;
   const exp=d.expenses.filter(e=>!e.paid_at && e.due_date<=in7);
-  const ch=d.chores.filter(c=>c.next_due<=t);
-  const tom=iso(addDays(new Date(),2));
-  const ev=d.events.filter(e=>iso(new Date(e.starts_at))<tom && iso(new Date(e.starts_at))>=t);
-  const lunch=d.todayMeals.find(m=>m.slot==='pranzo')?.dish, dinner=d.todayMeals.find(m=>m.slot==='cena')?.dish;
+  const late=exp.filter(e=>e.due_date<t).length;
+  const maint=d.maintenances.filter(x=>daysFromToday(x.next_due)<=30);
+  const maintSoon=maint.filter(x=>daysFromToday(x.next_due)<=7).length;
+  const warr=d.components.filter(c=>c.warranty_until && daysFromToday(c.warranty_until)>=0 && daysFromToday(c.warranty_until)<=60);
+  const meal=(day,slot)=>d.dayMeals.find(m=>m.day===day&&m.slot===slot)?.dish;
+  const lunch=meal(t,'pranzo'), dinner=meal(t,'cena'), tLunch=meal(tomorrow,'pranzo'), tDinner=meal(tomorrow,'cena');
+
+  const parts=[];
+  if(evToday.length) parts.push(pl(evToday.length,'impegno','impegni'));
+  if(chores.length) parts.push(pl(chores.length,'faccenda','faccende')+(mine?` (${mine} ${mine===1?'tua':'tue'})`:''));
+  if(exp.length) parts.push(pl(exp.length,'scadenza','scadenze')+(late?` (${late} già ${late===1?'scaduta':'scadute'})`:''));
+  if(maintSoon) parts.push(pl(maintSoon,'manutenzione','manutenzioni'));
+  const sentence=parts.length?`In programma: ${parts.join(', ')}.`:'Niente in programma: giornata libera 🎉';
+  const tavola=(lunch||dinner)?[lunch?`pranzo ${esc(lunch)}`:'',dinner?`cena ${esc(dinner)}`:''].filter(Boolean).join(' · '):'menu di oggi non ancora impostato';
+  const slot=(s,v)=>`<div class="slot" data-act="meal" data-day="${t}" data-slot="${s}"><b>${s}</b>${v?`<span>${esc(v)}</span>`:'<span class="ph">tocca per aggiungere</span>'}</div>`;
+
   return `
-<h2>Menu di oggi</h2>
-<div class="card"><div>🍽️ Pranzo: ${lunch?esc(lunch):'<span class="empty">non impostato</span>'}</div>
-<div>🌙 Cena: ${dinner?esc(dinner):'<span class="empty">non impostata</span>'}</div></div>
-<h2>Scadenze nei prossimi 7 giorni</h2>
+<div class="card brief"><p class="hi">${greet}, ${esc(state.member.display_name)}</p><div class="dt">${dateStr}</div>
+<div class="sum">${sentence}</div><div class="sum" style="margin-top:6px">🍽️ A tavola: ${tavola}</div></div>
+
+<h2>🍽️ A tavola</h2>
+<div class="card day">${slot('pranzo',lunch).replace('class="slot"','class="slot" style="border-top:0"')}${slot('cena',dinner)}</div>
+${(tLunch||tDinner)?`<p class="hint">Domani: ${[tLunch?'pranzo '+esc(tLunch):'',tDinner?'cena '+esc(tDinner):''].filter(Boolean).join(' · ')}</p>`:''}
+
+<h2>📅 Impegni di oggi</h2>
+${evToday.length?evToday.map(rowEventShort).join(''):'<div class="empty">Nessun impegno oggi</div>'}
+${evTom.length?`<div class="sub">Domani</div>${evTom.map(rowEventShort).join('')}`:''}
+
+<h2>✅ Da fare oggi</h2>
+${chores.length?chores.map(rowChore).join(''):'<div class="empty">Nessuna faccenda in sospeso ✨</div>'}
+
+<h2>💶 Scadenze (prossimi 7 giorni)</h2>
 ${exp.length?exp.map(rowExpense).join(''):'<div class="empty">Niente in scadenza 🎉</div>'}
-<h2>Faccende da fare</h2>
-${ch.length?ch.map(rowChore).join(''):'<div class="empty">Tutto fatto ✨</div>'}
-<h2>Impegni oggi e domani</h2>
-${ev.length?ev.map(rowEvent).join(''):'<div class="empty">Nessun impegno</div>'}`;
+${maint.length?`<h2>🔧 Manutenzioni in arrivo</h2>${maint.map(rowMaint).join('')}`:''}
+${warr.length?`<h2>🛡️ Garanzie in scadenza</h2>${warr.map(rowWarranty).join('')}`:''}
+<p class="hint">Aggiornato alle ${hm(new Date())}</p>`;
 }
 
 // ----- Spese -----
 function rowExpense(e){
-  return `<div class="card item"><div><div class="t">${esc(e.title)}</div>
+  return `<div class="card item"><div class="grow" data-act="edit-expense" data-id="${e.id}"><div class="t">${esc(e.title)}</div>
   <div class="s">${dueLabel(e.due_date)} · ${esc(e.category)}${e.amount!=null?' · '+eur(e.amount):''}${e.recurrence!=='none'?' · 🔁':''}</div></div>
   <button class="primary small" data-act="pay" data-id="${e.id}">Pagata</button></div>`;
 }
@@ -223,23 +292,22 @@ function tabSpese(){
 <h2>Da pagare</h2>
 ${open.length?open.map(rowExpense).join(''):'<div class="empty">Nessuna scadenza aperta</div>'}
 <h2>Pagate di recente</h2>
-${paid.slice(0,10).map(e=>`<div class="card item"><div><div class="t">${esc(e.title)}</div>
-<div class="s">${new Date(e.paid_at).toLocaleDateString('it-IT')} · ${esc(e.category)}${e.amount!=null?' · '+eur(e.amount):''}</div></div>
-<button class="link" data-act="del-expense" data-id="${e.id}">🗑</button></div>`).join('')||'<div class="empty">Ancora niente</div>'}
-${open.length?`<h2>Gestisci</h2>${open.map(e=>`<div class="card item"><span>${esc(e.title)}</span><button class="link" data-act="del-expense" data-id="${e.id}">🗑 Elimina</button></div>`).join('')}`:''}`;
+${paid.slice(0,10).map(e=>`<div class="card item"><div class="grow" data-act="edit-expense" data-id="${e.id}"><div class="t">${esc(e.title)}</div>
+<div class="s">${new Date(e.paid_at).toLocaleDateString('it-IT')} · ${esc(e.category)}${e.amount!=null?' · '+eur(e.amount):''}</div></div></div>`).join('')||'<div class="empty">Ancora niente</div>'}
+<p class="hint">Tocca una voce per modificarla o eliminarla.</p>`;
 }
 
 // ----- Faccende -----
 function rowChore(c){
-  return `<div class="card item"><div><div class="t">${esc(c.title)}</div>
-  <div class="s">${dueLabel(c.next_due)} · ogni ${c.every_days} g · ${esc(nameOf(c.assignee))}${c.rotate?' 🔄':''}</div></div>
+  return `<div class="card item"><div class="grow" data-act="edit-chore" data-id="${c.id}"><div class="t">${esc(c.title)}</div>
+  <div class="s">${dueLabel(c.next_due)} · ogni ${c.every_days} g · ${esc(nameOf(c.assignee))}${c.assignee===state.member.user_id?'<span class="chip me">tua</span>':''}${c.rotate?' 🔄':''}</div></div>
   <button class="primary small" data-act="done-chore" data-id="${c.id}">Fatto</button></div>`;
 }
 function tabFaccende(){
   const list=state.d.chores;
   return `<h2>Tutte le faccende</h2>
-${list.length?list.map(c=>`${rowChore(c)}`).join(''):'<div class="empty">Aggiungi la prima faccenda con +</div>'}
-${list.length?`<h2>Gestisci</h2>${list.map(c=>`<div class="card item"><span>${esc(c.title)}</span><button class="link" data-act="del-chore" data-id="${c.id}">🗑 Elimina</button></div>`).join('')}`:''}`;
+${list.length?list.map(rowChore).join(''):'<div class="empty">Aggiungi la prima faccenda con +</div>'}
+${list.length?'<p class="hint">Tocca una faccenda per modificarla o eliminarla.</p>':''}`;
 }
 
 // ----- Menu -----
@@ -258,26 +326,85 @@ ${days.map(day=>{
 
 // ----- Impegni -----
 function rowEvent(e){
-  return `<div class="card item"><div><div class="t">${esc(e.title)}</div>
-  <div class="s">${fmtDT(e.starts_at)} · ${esc(nameOf(e.assignee))}${e.notes?' · '+esc(e.notes):''}</div></div>
-  <button class="link" data-act="del-event" data-id="${e.id}">🗑</button></div>`;
+  return `<div class="card item"><div class="grow" data-act="edit-event" data-id="${e.id}"><div class="t">${esc(e.title)}</div>
+  <div class="s">${fmtDT(e.starts_at)} · ${esc(nameOf(e.assignee))}${e.notes?' · '+esc(e.notes):''}</div></div></div>`;
 }
 function tabImpegni(){
   const list=state.d.events;
-  return `<h2>Prossimi impegni</h2>${list.length?list.map(rowEvent).join(''):'<div class="empty">Nessun impegno in programma</div>'}`;
+  return `<h2>Prossimi impegni</h2>${list.length?list.map(rowEvent).join(''):'<div class="empty">Nessun impegno in programma</div>'}
+${list.length?'<p class="hint">Tocca un impegno per modificarlo o eliminarlo.</p>':''}`;
+}
+
+// ----- Casa e componenti -----
+const safeUrl = u => /^https?:\/\//i.test(u||'') ? u : '';
+const fmtDate = s => new Date(s+'T00:00').toLocaleDateString('it-IT');
+function warrantyChip(c){
+  if(!c.warranty_until) return '';
+  const n=daysFromToday(c.warranty_until);
+  if(n<0) return `<span class="late">garanzia scaduta</span>`;
+  return `<span class="${n<=60?'soon':''}">garanzia fino al ${fmtDate(c.warranty_until)}</span>`;
+}
+function rowComponent(c){
+  const bm=[c.brand,c.model].filter(Boolean).map(esc).join(' ');
+  const man=safeUrl(c.manual_url);
+  return `<div class="card item"><div class="grow" data-act="edit-component" data-id="${c.id}"><div class="t">${esc(c.name)}</div>
+  <div class="s">${[bm,esc(c.category),warrantyChip(c)].filter(Boolean).join(' · ')}</div></div>
+  ${man?`<a class="btn ghost" href="${esc(man)}" target="_blank" rel="noopener" aria-label="Manuale">📖</a>`:''}</div>`;
+}
+function rowWarranty(c){
+  return `<div class="card item"><div class="grow" data-act="edit-component" data-id="${c.id}"><div class="t">${esc(c.name)}</div>
+  <div class="s">${warrantyChip(c)}${c.room?' · '+esc(c.room):''}</div></div></div>`;
+}
+function rowMaint(x){
+  const comp=state.d.components.find(c=>c.id===x.component_id);
+  return `<div class="card item"><div class="grow" data-act="edit-maint" data-id="${x.id}"><div class="t">${esc(x.title)}</div>
+  <div class="s">${dueLabel(x.next_due)}${comp?' · '+esc(comp.name):''} · ogni ${x.every_months} ${x.every_months===1?'mese':'mesi'}</div></div>
+  <button class="primary small" data-act="done-maint" data-id="${x.id}">Fatto</button></div>`;
+}
+function rowContact(c){
+  const tel=String(c.phone||'').replace(/[^\d+]/g,'');
+  return `<div class="card item"><div class="grow" data-act="edit-contact" data-id="${c.id}"><div class="t">${esc(c.name)}</div>
+  <div class="s">${[c.role,c.phone,c.notes].filter(Boolean).map(esc).join(' · ')}</div></div>
+  ${tel?`<a class="btn primary" href="tel:${tel}">Chiama</a>`:''}</div>`;
+}
+function tabCasa(){
+  const d=state.d, v=state.casaView;
+  const seg=`<div class="seg">${[['componenti','Componenti'],['manutenzioni','Manutenzioni'],['contatti','Contatti']].map(([k,l])=>`<button class="${v===k?'on':''}" data-act="casa-view" data-v="${k}">${l}</button>`).join('')}</div>`;
+  if(d.casaMissing) return seg+`<div class="card"><b>Modulo non ancora attivo</b><p class="s">Esegui il file <code>schema_casa.sql</code> nell'SQL Editor di Supabase, poi ricarica l'app.</p></div>`;
+  let body='';
+  if(v==='componenti'){
+    const rooms=[...new Set(d.components.map(c=>c.room||'Senza stanza'))].sort((a,b)=>a.localeCompare(b,'it'));
+    body=d.components.length
+      ? rooms.map(r=>`<h2>${esc(r)}</h2>`+d.components.filter(c=>(c.room||'Senza stanza')===r).map(rowComponent).join('')).join('')+'<p class="hint">Tocca un componente per modificarlo o eliminarlo. 📖 apre il manuale.</p>'
+      : '<div class="empty">Aggiungi caldaia, lavatrice, forno… con il +, con garanzia e link al manuale.</div>';
+  } else if(v==='manutenzioni'){
+    body=d.maintenances.length
+      ? '<h2>Prossime scadenze</h2>'+d.maintenances.map(rowMaint).join('')+'<p class="hint">"Fatto" imposta la prossima scadenza in automatico.</p>'
+      : '<div class="empty">Aggiungi controlli ricorrenti (caldaia, filtri, ecc.) con il +.</div>';
+  } else {
+    body=d.contacts.length
+      ? '<h2>Contatti utili</h2>'+d.contacts.map(rowContact).join('')
+      : '<div class="empty">Aggiungi idraulico, elettricista, amministratore… con il +.</div>';
+  }
+  return seg+body;
 }
 
 // ---------- form modale ----------
-function openForm(title, fields, onSave){
+// onDelete (opzionale): mostra il pulsante Elimina
+function openForm(title, fields, onSave, onDelete){
   const el=document.createElement('div'); el.className='modal';
   el.innerHTML=`<form class="sheet"><h3>${esc(title)}</h3>${fields.map(f=>`<label>${esc(f.label)}${
     f.type==='select'
       ? `<select name="${f.name}">${f.options.map(o=>`<option value="${esc(o[0])}" ${String(o[0])===String(f.value)?'selected':''}>${esc(o[1])}</option>`).join('')}</select>`
       : `<input name="${f.name}" type="${f.type||'text'}" value="${esc(f.value??'')}" ${f.step?`step="${f.step}"`:''} ${f.req?'required':''}>`
-  }</label>`).join('')}<div class="row"><button type="button" class="ghost" data-x>Annulla</button><button class="primary">Salva</button></div></form>`;
+  }</label>`).join('')}<div class="row">${onDelete?'<button type="button" class="danger" data-del>Elimina</button><span class="spacer"></span>':''}<button type="button" class="ghost" data-x>Annulla</button><button class="primary">Salva</button></div></form>`;
   document.body.appendChild(el);
   el.querySelector('[data-x]').onclick=()=>el.remove();
   el.onclick=e=>{ if(e.target===el) el.remove(); };
+  if(onDelete) el.querySelector('[data-del]').onclick=async()=>{
+    if(!confirm('Eliminare definitivamente?')) return;
+    try{ await onDelete(); el.remove(); await refresh(); }catch(err){ alert(err.message||err); }
+  };
   el.querySelector('form').onsubmit=async e=>{
     e.preventDefault();
     try{ await onSave(Object.fromEntries(new FormData(e.target))); el.remove(); await refresh(); }
@@ -286,28 +413,94 @@ function openForm(title, fields, onSave){
 }
 const memberOpts = () => state.d.members.map(m=>[m.user_id,m.display_name]);
 const must = r => { if(r.error) throw r.error; return r; };
+const catOpts = cur => (CATS.includes(cur)||!cur ? CATS : [...CATS,cur]).map(c=>[c,c]);
+const findBy = (list,el) => state.d[list].find(x=>x.id===el.dataset.id);
+
+// ---------- campi dei moduli Casa ----------
+const COMP_CATS=['elettrodomestico','caldaia/riscaldamento','climatizzazione','idraulica','elettrico','arredo','giardino','altro'];
+const componentFields = c => [
+  {name:'name',label:'Nome',req:true,value:c?.name},
+  {name:'room',label:'Stanza / zona',value:c?.room??''},
+  {name:'category',label:'Tipo',type:'select',options:(!c?.category||COMP_CATS.includes(c.category)?COMP_CATS:[...COMP_CATS,c.category]).map(x=>[x,x]),value:c?.category},
+  {name:'brand',label:'Marca',value:c?.brand??''},
+  {name:'model',label:'Modello',value:c?.model??''},
+  {name:'serial',label:'Numero di serie',value:c?.serial??''},
+  {name:'purchase_date',label:'Data di acquisto',type:'date',value:c?.purchase_date??''},
+  {name:'warranty_until',label:'Garanzia fino al',type:'date',value:c?.warranty_until??''},
+  {name:'manual_url',label:'Link al manuale (https://…)',type:'url',value:c?.manual_url??''},
+  {name:'notes',label:'Note',value:c?.notes??''}
+];
+const componentRow = v => ({name:v.name, room:v.room||null, category:v.category, brand:v.brand||null, model:v.model||null, serial:v.serial||null,
+  purchase_date:v.purchase_date||null, warranty_until:v.warranty_until||null, manual_url:v.manual_url||null, notes:v.notes||null});
+const maintFields = x => [
+  {name:'title',label:'Cosa fare',req:true,value:x?.title},
+  {name:'component_id',label:'Componente',type:'select',options:[['','— nessuno —'],...state.d.components.map(c=>[c.id,c.name])],value:x?.component_id??''},
+  {name:'every_months',label:'Ogni quanti mesi',type:'number',value:x?.every_months??12,req:true},
+  {name:'next_due',label:'Prossima scadenza',type:'date',value:x?.next_due??today(),req:true},
+  {name:'notes',label:'Note',value:x?.notes??''}
+];
+const maintRow = v => ({title:v.title, component_id:v.component_id||null, every_months:Number(v.every_months), next_due:v.next_due, notes:v.notes||null});
+const contactFields = c => [
+  {name:'name',label:'Nome',req:true,value:c?.name},
+  {name:'role',label:'Ruolo (es. idraulico, amministratore)',value:c?.role??''},
+  {name:'phone',label:'Telefono',type:'tel',value:c?.phone??''},
+  {name:'email',label:'Email',type:'email',value:c?.email??''},
+  {name:'notes',label:'Note',value:c?.notes??''}
+];
+const contactRow = v => ({name:v.name, role:v.role||null, phone:v.phone||null, email:v.email||null, notes:v.notes||null});
+
+// ---------- impostazioni ----------
+function openSettings(){
+  const el=document.createElement('div'); el.className='modal';
+  el.innerHTML=`<div class="sheet"><h3>⚙️ ${esc(state.house?.name||'Casa')}</h3>
+  <div class="kv"><span>Account</span><span>${esc(state.member.display_name)}<br><small>${esc(state.user?.email||'')}</small></span></div>
+  <div class="kv"><span>Codice invito</span><span><b>${esc(state.house?.invite_code||'')}</b></span></div>
+  <div class="kv"><span>Membri</span><span>${state.d.members.map(m=>esc(m.display_name)).join(', ')}</span></div>
+  <div class="row" style="margin-top:14px"><button class="ghost" data-x>Chiudi</button><button class="danger" data-logout>Esci dall'account</button></div></div>`;
+  document.body.appendChild(el);
+  el.querySelector('[data-x]').onclick=()=>el.remove();
+  el.onclick=e=>{ if(e.target===el) el.remove(); };
+  el.querySelector('[data-logout]').onclick=async()=>{ el.remove(); await actions.logout(); };
+}
 
 // ---------- azioni ----------
 const actions = {
+  // Spese
   'add-spese': () => openForm('Nuova spesa / scadenza',[
     {name:'title',label:'Descrizione',req:true},
-    {name:'category',label:'Categoria',type:'select',options:CATS.map(c=>[c,c])},
+    {name:'category',label:'Categoria',type:'select',options:catOpts()},
     {name:'amount',label:'Importo (€)',type:'number',step:'0.01'},
     {name:'due_date',label:'Scadenza',type:'date',value:today(),req:true},
-    {name:'recurrence',label:'Ricorrenza',type:'select',options:RECS}
+    {name:'recurrence',label:'Ricorrenza',type:'select',options:RECS},
+    {name:'notes',label:'Note'}
   ], async v => must(await sb.from('expenses').insert({
-    title:v.title, category:v.category, amount:v.amount===''?null:Number(v.amount), due_date:v.due_date, recurrence:v.recurrence
+    title:v.title, category:v.category, amount:v.amount===''?null:Number(v.amount), due_date:v.due_date, recurrence:v.recurrence, notes:v.notes||null
   }))),
 
+  'edit-expense': el => {
+    const x=findBy('expenses',el); if(!x) return;
+    openForm('Modifica spesa',[
+      {name:'title',label:'Descrizione',req:true,value:x.title},
+      {name:'category',label:'Categoria',type:'select',options:catOpts(x.category),value:x.category},
+      {name:'amount',label:'Importo (€)',type:'number',step:'0.01',value:x.amount??''},
+      {name:'due_date',label:'Scadenza',type:'date',value:x.due_date,req:true},
+      {name:'recurrence',label:'Ricorrenza',type:'select',options:RECS,value:x.recurrence},
+      {name:'notes',label:'Note',value:x.notes??''}
+    ], async v => must(await sb.from('expenses').update({
+      title:v.title, category:v.category, amount:v.amount===''?null:Number(v.amount), due_date:v.due_date, recurrence:v.recurrence, notes:v.notes||null
+    }).eq('id',x.id)),
+    async () => must(await sb.from('expenses').delete().eq('id',x.id)));
+  },
+
   'pay': async el => {
-    const x=state.d.expenses.find(e=>e.id===el.dataset.id); if(!x) return;
+    const x=findBy('expenses',el); if(!x) return;
     must(await sb.from('expenses').update({paid_at:new Date().toISOString()}).eq('id',x.id));
     const n=REC_N[x.recurrence];
-    if(n) must(await sb.from('expenses').insert({title:x.title,category:x.category,amount:x.amount,due_date:addMonths(x.due_date,n),recurrence:x.recurrence}));
+    if(n) must(await sb.from('expenses').insert({title:x.title,category:x.category,amount:x.amount,due_date:addMonths(x.due_date,n),recurrence:x.recurrence,notes:x.notes}));
     await refresh();
   },
-  'del-expense': async el => { if(confirm('Eliminare?')){ must(await sb.from('expenses').delete().eq('id',el.dataset.id)); await refresh(); } },
 
+  // Faccende
   'add-faccende': () => openForm('Nuova faccenda',[
     {name:'title',label:'Faccenda',req:true},
     {name:'every_days',label:'Ogni quanti giorni',type:'number',value:7,req:true},
@@ -318,8 +511,22 @@ const actions = {
     title:v.title, every_days:Number(v.every_days), assignee:v.assignee, rotate:v.rotate==='true', next_due:v.next_due||today()
   }))),
 
+  'edit-chore': el => {
+    const c=findBy('chores',el); if(!c) return;
+    openForm('Modifica faccenda',[
+      {name:'title',label:'Faccenda',req:true,value:c.title},
+      {name:'every_days',label:'Ogni quanti giorni',type:'number',value:c.every_days,req:true},
+      {name:'assignee',label:'Assegnata a',type:'select',options:memberOpts(),value:c.assignee},
+      {name:'rotate',label:'A rotazione tra voi',type:'select',options:[['false','No'],['true','Sì']],value:String(c.rotate)},
+      {name:'next_due',label:'Prossima scadenza',type:'date',value:c.next_due,req:true}
+    ], async v => must(await sb.from('chores').update({
+      title:v.title, every_days:Number(v.every_days), assignee:v.assignee||null, rotate:v.rotate==='true', next_due:v.next_due
+    }).eq('id',c.id)),
+    async () => must(await sb.from('chores').delete().eq('id',c.id)));
+  },
+
   'done-chore': async el => {
-    const c=state.d.chores.find(x=>x.id===el.dataset.id); if(!c) return;
+    const c=findBy('chores',el); if(!c) return;
     let assignee=c.assignee;
     if(c.rotate && state.d.members.length>1){
       const ids=state.d.members.map(m=>m.user_id), i=ids.indexOf(c.assignee);
@@ -328,8 +535,8 @@ const actions = {
     must(await sb.from('chores').update({last_done:today(), next_due:iso(addDays(new Date(),c.every_days)), assignee}).eq('id',c.id));
     await refresh();
   },
-  'del-chore': async el => { if(confirm('Eliminare?')){ must(await sb.from('chores').delete().eq('id',el.dataset.id)); await refresh(); } },
 
+  // Impegni
   'add-impegni': () => openForm('Nuovo impegno',[
     {name:'title',label:'Cosa',req:true},
     {name:'starts_at',label:'Quando',type:'datetime-local',req:true},
@@ -338,12 +545,60 @@ const actions = {
   ], async v => must(await sb.from('events').insert({
     title:v.title, starts_at:new Date(v.starts_at).toISOString(), assignee:v.assignee, notes:v.notes||null
   }))),
-  'del-event': async el => { if(confirm('Eliminare?')){ must(await sb.from('events').delete().eq('id',el.dataset.id)); await refresh(); } },
 
+  'edit-event': el => {
+    const e=findBy('events',el); if(!e) return;
+    openForm('Modifica impegno',[
+      {name:'title',label:'Cosa',req:true,value:e.title},
+      {name:'starts_at',label:'Quando',type:'datetime-local',req:true,value:toLocalInput(e.starts_at)},
+      {name:'assignee',label:'Per chi',type:'select',options:memberOpts(),value:e.assignee},
+      {name:'notes',label:'Note',value:e.notes??''}
+    ], async v => must(await sb.from('events').update({
+      title:v.title, starts_at:new Date(v.starts_at).toISOString(), assignee:v.assignee||null, notes:v.notes||null
+    }).eq('id',e.id)),
+    async () => must(await sb.from('events').delete().eq('id',e.id)));
+  },
+
+  // Casa e componenti
+  'casa-view': el => { state.casaView=el.dataset.v; render(); },
+  'add-casa': () => ({
+    componenti: () => openForm('Nuovo componente',componentFields(),
+      async v => must(await sb.from('components').insert(componentRow(v)))),
+    manutenzioni: () => openForm('Nuova manutenzione',maintFields(),
+      async v => must(await sb.from('maintenances').insert(maintRow(v)))),
+    contatti: () => openForm('Nuovo contatto',contactFields(),
+      async v => must(await sb.from('contacts').insert(contactRow(v))))
+  })[state.casaView](),
+
+  'edit-component': el => {
+    const c=findBy('components',el); if(!c) return;
+    openForm('Modifica componente',componentFields(c),
+      async v => must(await sb.from('components').update(componentRow(v)).eq('id',c.id)),
+      async () => must(await sb.from('components').delete().eq('id',c.id)));
+  },
+  'edit-maint': el => {
+    const x=findBy('maintenances',el); if(!x) return;
+    openForm('Modifica manutenzione',maintFields(x),
+      async v => must(await sb.from('maintenances').update(maintRow(v)).eq('id',x.id)),
+      async () => must(await sb.from('maintenances').delete().eq('id',x.id)));
+  },
+  'done-maint': async el => {
+    const x=findBy('maintenances',el); if(!x) return;
+    must(await sb.from('maintenances').update({last_done:today(), next_due:addMonths(today(),x.every_months)}).eq('id',x.id));
+    await refresh();
+  },
+  'edit-contact': el => {
+    const c=findBy('contacts',el); if(!c) return;
+    openForm('Modifica contatto',contactFields(c),
+      async v => must(await sb.from('contacts').update(contactRow(v)).eq('id',c.id)),
+      async () => must(await sb.from('contacts').delete().eq('id',c.id)));
+  },
+
+  // Menu
   'week': async el => { state.weekStart=addDays(state.weekStart,7*Number(el.dataset.n)); await refresh(); },
   'meal': el => {
     const {day,slot}=el.dataset;
-    const cur=state.d.meals.find(m=>m.day===day&&m.slot===slot)?.dish||'';
+    const cur=[...state.d.meals,...state.d.dayMeals].find(m=>m.day===day&&m.slot===slot)?.dish||'';
     openForm(`${slot[0].toUpperCase()+slot.slice(1)} · ${fmtDay(day)}`,[{name:'dish',label:'Piatto (vuoto per cancellare)',value:cur}],
       async v => {
         const dish=v.dish.trim();
@@ -352,8 +607,12 @@ const actions = {
       });
   },
 
-  'settings': () => alert(`Casa: ${state.house?.name}\nCodice invito per Sara: ${state.house?.invite_code}\n\nMembri: ${state.d.members.map(m=>m.display_name).join(', ')}`),
-  'logout': async () => { await sb.auth.signOut(); state.err=''; state.member=null; state.screen='auth'; render(); }
+  // Account
+  'settings': () => openSettings(),
+  'logout': async () => {
+    try{ await sb.auth.signOut(); }catch(e){}
+    state.err=''; state.member=null; state.user=null; state.house=null; state.tab='oggi'; state.screen='auth'; render();
+  }
 };
 
 // ---------- eventi ----------
@@ -386,6 +645,9 @@ app.addEventListener('submit', async e => {
 });
 
 sb.auth.onAuthStateChange((ev)=>{ if(ev==='SIGNED_OUT'){ state.screen='auth'; render(); } });
+
+// Quando riapri l'app (o torni sulla scheda) il resoconto si aggiorna con i dati più recenti
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible' && state.screen==='main') refresh(); });
 
 if('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(()=>{});
 boot();
