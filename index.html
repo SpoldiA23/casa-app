@@ -135,7 +135,7 @@ function dueLabel(s){
 // ---------- dati ----------
 async function loadData(){
   const ws=iso(state.weekStart), we=iso(addDays(state.weekStart,6));
-  const [m,e,c,ev,me,td,co,ma,ct] = await Promise.all([
+  const [m,e,c,ev,me,td,co,ma,ct,cs] = await Promise.all([
     sb.from('members').select('*'),
     sb.from('expenses').select('*').order('due_date'),
     sb.from('chores').select('*').order('next_due'),
@@ -144,14 +144,16 @@ async function loadData(){
     sb.from('meals').select('*').gte('day',today()).lte('day',iso(addDays(new Date(),1))),
     sb.from('components').select('*').order('name'),
     sb.from('maintenances').select('*').order('next_due'),
-    sb.from('contacts').select('*').order('name')
+    sb.from('contacts').select('*').order('name'),
+    sb.from('calendar_sources').select('*').order('name')
   ]);
   const bad=[m,e,c,ev,me,td].find(r=>r.error);
   if(bad) throw bad.error;
   // Il modulo Casa funziona solo dopo aver eseguito schema_casa.sql: se manca, il resto dell'app continua a funzionare.
   const casaMissing=[co,ma,ct].some(r=>r.error);
   state.d = { members:m.data, expenses:e.data, chores:c.data, events:ev.data, meals:me.data, dayMeals:td.data,
-    components:casaMissing?[]:co.data, maintenances:casaMissing?[]:ma.data, contacts:casaMissing?[]:ct.data, casaMissing };
+    components:casaMissing?[]:co.data, maintenances:casaMissing?[]:ma.data, contacts:casaMissing?[]:ct.data, casaMissing,
+    calSources:cs.error?[]:cs.data, calMissing:!!cs.error };
 }
 
 async function boot(){
@@ -221,9 +223,14 @@ ${showFab?`<button class="primary fab" data-act="add-${state.tab}" aria-label="A
 // ----- Oggi: resoconto della giornata -----
 const pl = (n,s,p) => `${n} ${n===1?s:p}`;
 const hm = s => new Date(s).toLocaleTimeString('it-IT',{hour:'2-digit',minute:'2-digit'});
+// Impegni: quelli importati dai calendari (source_id) sono in sola lettura; quelli tutto il giorno vanno per primi.
+const byTime = (a,b) => (b.all_day-a.all_day) || a.starts_at.localeCompare(b.starts_at);
+const srcName = id => state.d.calSources.find(s=>s.id===id)?.name;
+const evWho = e => e.source_id ? '📅 '+esc(srcName(e.source_id)||'calendario') : esc(nameOf(e.assignee));
+const evAct = e => `data-act="${e.source_id?'cal-info':'edit-event'}" data-id="${e.id}"`;
 function rowEventShort(e){
-  return `<div class="card item"><div class="grow" data-act="edit-event" data-id="${e.id}"><div class="t"><span class="when">${hm(e.starts_at)}</span>${esc(e.title)}</div>
-  <div class="s">${esc(nameOf(e.assignee))}${e.notes?' · '+esc(e.notes):''}</div></div></div>`;
+  return `<div class="card item"><div class="grow" ${evAct(e)}><div class="t">${e.all_day?'':`<span class="when">${hm(e.starts_at)}</span>`}${esc(e.title)}</div>
+  <div class="s">${e.all_day?'tutto il giorno · ':''}${evWho(e)}${e.notes?' · '+esc(e.notes):''}</div></div></div>`;
 }
 function tabOggi(){
   const d=state.d, t=today(), tomorrow=iso(addDays(new Date(),1)), in7=iso(addDays(new Date(),7));
@@ -231,8 +238,8 @@ function tabOggi(){
   const greet=hour<13?'Buongiorno':hour<18?'Buon pomeriggio':'Buonasera';
   const dateStr=new Date().toLocaleDateString('it-IT',{weekday:'long',day:'numeric',month:'long'});
   const dayOf=s=>iso(new Date(s));
-  const evToday=d.events.filter(e=>dayOf(e.starts_at)===t);
-  const evTom=d.events.filter(e=>dayOf(e.starts_at)===tomorrow);
+  const evToday=d.events.filter(e=>dayOf(e.starts_at)===t).sort(byTime);
+  const evTom=d.events.filter(e=>dayOf(e.starts_at)===tomorrow).sort(byTime);
   const chores=d.chores.filter(c=>c.next_due<=t).sort((a,b)=>(b.assignee===me)-(a.assignee===me));
   const mine=chores.filter(c=>c.assignee===me).length;
   const exp=d.expenses.filter(e=>!e.paid_at && e.due_date<=in7);
@@ -326,13 +333,24 @@ ${days.map(day=>{
 
 // ----- Impegni -----
 function rowEvent(e){
-  return `<div class="card item"><div class="grow" data-act="edit-event" data-id="${e.id}"><div class="t">${esc(e.title)}</div>
-  <div class="s">${fmtDT(e.starts_at)} · ${esc(nameOf(e.assignee))}${e.notes?' · '+esc(e.notes):''}</div></div></div>`;
+  return `<div class="card item"><div class="grow" ${evAct(e)}><div class="t">${esc(e.title)}</div>
+  <div class="s">${e.all_day?'tutto il giorno':hm(e.starts_at)} · ${evWho(e)}${e.notes?' · '+esc(e.notes):''}</div></div></div>`;
 }
 function tabImpegni(){
-  const list=state.d.events;
-  return `<h2>Prossimi impegni</h2>${list.length?list.map(rowEvent).join(''):'<div class="empty">Nessun impegno in programma</div>'}
-${list.length?'<p class="hint">Tocca un impegno per modificarlo o eliminarlo.</p>':''}`;
+  const d=state.d, t=today();
+  const dayOf=s=>iso(new Date(s));
+  const list=d.events.filter(e=>dayOf(e.starts_at)>=t).sort((a,b)=>dayOf(a.starts_at).localeCompare(dayOf(b.starts_at))||byTime(a,b));
+  const days=[...new Set(list.map(e=>dayOf(e.starts_at)))];
+  const last=d.calSources.map(s=>s.last_synced_at).filter(Boolean).sort().pop();
+  const bad=d.calSources.filter(s=>s.last_error).length;
+  let bar;
+  if(d.calMissing) bar=`<div class="card"><b>Calendari non ancora attivi</b><p class="s">Esegui <code>schema_calendari.sql</code> nell'SQL Editor di Supabase per collegare i calendari.</p></div>`;
+  else if(!d.calSources.length) bar=`<div class="card"><b>Collega i tuoi calendari</b><p class="s">Da ⚙️ → Calendari aggiungi il link del calendario Apple o Google: gli impegni arriveranno qui da soli.</p></div>`;
+  else bar=`<div class="card item"><div class="s">📅 ${pl(d.calSources.length,'calendario collegato','calendari collegati')}<br>${bad?`<span class="late">⚠️ ${pl(bad,'con errori','con errori')} (vedi ⚙️)</span>`:(last?'aggiornato '+fmtDT(last):'mai sincronizzato')}</div>
+  <button class="outline small" data-act="sync">🔄 Sincronizza</button></div>`;
+  return bar+(days.length
+    ? days.map(day=>`<h2>${fmtDay(day)}${day===t?' · oggi':''}</h2>${list.filter(e=>dayOf(e.starts_at)===day).map(rowEvent).join('')}`).join('')+'<p class="hint">Gli impegni 📅 arrivano dai calendari: si modificano da lì. Gli altri si modificano toccandoli.</p>'
+    : '<h2>Prossimi impegni</h2><div class="empty">Nessun impegno in programma</div>');
 }
 
 // ----- Casa e componenti -----
@@ -450,17 +468,58 @@ const contactFields = c => [
 const contactRow = v => ({name:v.name, role:v.role||null, phone:v.phone||null, email:v.email||null, notes:v.notes||null});
 
 // ---------- impostazioni ----------
+// Chiede alla funzione di Supabase di rileggere i calendari collegati
+async function syncNow(){
+  const { data, error } = await sb.functions.invoke('sync-calendars',{ body:{} });
+  if(error){
+    let msg=error.message||String(error);
+    try{ const j=await error.context.json(); msg=j.error||j.message||msg; }catch(_){}
+    if(/not found|404/i.test(msg)) msg='Funzione di sincronizzazione non trovata: va installata su Supabase (vedi le istruzioni).';
+    throw new Error(msg);
+  }
+  await loadData(); render();
+  const bad=(data?.results||[]).filter(r=>!r.ok);
+  if(bad.length) alert('Problema con: '+bad.map(r=>`${r.name} (${r.error})`).join('; '));
+}
+
 function openSettings(){
-  const el=document.createElement('div'); el.className='modal';
+  const d=state.d, el=document.createElement('div'); el.className='modal';
+  const cal = d.calMissing
+    ? `<p class="s">Per collegare i calendari esegui <code>schema_calendari.sql</code> in Supabase.</p>`
+    : (d.calSources.length ? d.calSources.map(s=>`<div class="kv"><span>${esc(s.name)}<br><small>${s.last_error?'⚠️ '+esc(s.last_error):(s.last_synced_at?'aggiornato '+esc(fmtDT(s.last_synced_at)):'non ancora sincronizzato')}</small></span><span><button class="link" data-del-src="${s.id}" aria-label="Rimuovi">🗑</button></span></div>`).join('') : '<p class="s">Nessun calendario collegato.</p>')
+      +`<div class="row"><button class="outline small" data-add-src>➕ Aggiungi calendario</button>${d.calSources.length?'<button class="ghost small" data-sync>🔄 Sincronizza ora</button>':''}</div>`;
   el.innerHTML=`<div class="sheet"><h3>⚙️ ${esc(state.house?.name||'Casa')}</h3>
   <div class="kv"><span>Account</span><span>${esc(state.member.display_name)}<br><small>${esc(state.user?.email||'')}</small></span></div>
   <div class="kv"><span>Codice invito</span><span><b>${esc(state.house?.invite_code||'')}</b></span></div>
-  <div class="kv"><span>Membri</span><span>${state.d.members.map(m=>esc(m.display_name)).join(', ')}</span></div>
+  <div class="kv"><span>Membri</span><span>${d.members.map(m=>esc(m.display_name)).join(', ')}</span></div>
+  <h2 style="margin-top:18px">📅 Calendari collegati</h2>${cal}
   <div class="row" style="margin-top:14px"><button class="ghost" data-x>Chiudi</button><button class="danger" data-logout>Esci dall'account</button></div></div>`;
   document.body.appendChild(el);
   el.querySelector('[data-x]').onclick=()=>el.remove();
   el.onclick=e=>{ if(e.target===el) el.remove(); };
   el.querySelector('[data-logout]').onclick=async()=>{ el.remove(); await actions.logout(); };
+  const add=el.querySelector('[data-add-src]');
+  if(add) add.onclick=()=>{
+    el.remove();
+    openForm('Aggiungi calendario',[
+      {name:'name',label:'Nome (es. Famiglia Apple, Google)',req:true},
+      {name:'url',label:'Link del calendario (webcal:// o https://…)',req:true}
+    ], async v => {
+      const url=v.url.trim();
+      if(!/^(https?|webcals?):\/\//i.test(url)) throw new Error('Il link deve iniziare con webcal:// oppure https://');
+      must(await sb.from('calendar_sources').insert({name:v.name.trim(),url}));
+      try{ await syncNow(); }catch(e){ alert('Calendario aggiunto, ma la sincronizzazione non è riuscita: '+(e.message||e)); }
+    });
+  };
+  const sync=el.querySelector('[data-sync]');
+  if(sync) sync.onclick=async()=>{
+    sync.disabled=true; sync.textContent='⏳ Sincronizzo…';
+    try{ await syncNow(); el.remove(); openSettings(); }catch(e){ alert(e.message||e); sync.disabled=false; sync.textContent='🔄 Sincronizza ora'; }
+  };
+  el.querySelectorAll('[data-del-src]').forEach(b=>b.onclick=async()=>{
+    if(!confirm('Scollegare questo calendario? Verranno rimossi dall\'app anche i suoi impegni (il calendario originale non viene toccato).')) return;
+    try{ must(await sb.from('calendar_sources').delete().eq('id',b.dataset.delSrc)); el.remove(); await refresh(); openSettings(); }catch(e){ alert(e.message||e); }
+  });
 }
 
 // ---------- azioni ----------
@@ -557,6 +616,16 @@ const actions = {
       title:v.title, starts_at:new Date(v.starts_at).toISOString(), assignee:v.assignee||null, notes:v.notes||null
     }).eq('id',e.id)),
     async () => must(await sb.from('events').delete().eq('id',e.id)));
+  },
+
+  // Calendari
+  'cal-info': el => {
+    const e=findBy('events',el); if(!e) return;
+    alert(`"${e.title}" arriva dal calendario "${srcName(e.source_id)||''}".\nPer modificarlo o eliminarlo usa il calendario: l'app lo aggiornerà alla prossima sincronizzazione.`);
+  },
+  'sync': async el => {
+    const old=el.textContent; el.disabled=true; el.textContent='⏳ Sincronizzo…';
+    try{ await syncNow(); }catch(e){ alert(e.message||e); el.disabled=false; el.textContent=old; }
   },
 
   // Casa e componenti
